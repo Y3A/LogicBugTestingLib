@@ -33,8 +33,10 @@ static HANDLE CreateSymLinkInternalW(LPCWSTR ToCreate, LPCWSTR CreateFrom)
     if (!NT_SUCCESS(status)) {
         SetLastError(status);
         ret = NULL;
+        goto out;
     }
 
+out:
     return ret;
 }
 
@@ -47,26 +49,30 @@ HANDLE CreateSymLinkW(LPCWSTR ToCreate, LPCWSTR CreateFrom)
 
 HANDLE CreateFakeDeviceMapW(LPCWSTR DrivePath, LPCWSTR FakeDirectory)
 {
-    HANDLE                      hToken = NULL;
+    HANDLE                      hToken = NULL, hSymLink = NULL;
     TOKEN_STATISTICS            stats = { 0 };
     DWORD                       out = 0;
     WCHAR                       symLinkName[MAX_PATH] = { 0 };
     WCHAR                       fakeDirectory[MAX_PATH] = { 0 };
 
-    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ALL_ACCESS, &hToken))
-        return NULL;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ALL_ACCESS, &hToken)) {
+        hToken = NULL;
+        goto out;
+    }
 
-    if (!GetTokenInformation(hToken, TokenStatistics, &stats, sizeof(TOKEN_STATISTICS), &out)) {
-        CloseHandle(hToken);
-        return NULL;
-    };
-
-    CloseHandle(hToken);
+    if (!GetTokenInformation(hToken, TokenStatistics, &stats, sizeof(TOKEN_STATISTICS), &out))
+        goto out;
 
     wsprintfW(symLinkName, L"\\Sessions\\0\\DosDevices\\%08x-%08x\\%s", stats.AuthenticationId.HighPart, stats.AuthenticationId.LowPart, DrivePath);
     wsprintfW(fakeDirectory, L"\\GLOBAL??\\%s", FakeDirectory);
 
-    return CreateSymLinkInternalW(symLinkName, fakeDirectory);
+    hSymLink = CreateSymLinkInternalW(symLinkName, fakeDirectory);
+
+out:
+    if (hToken)
+        CloseHandle(hToken);
+
+    return hSymLink;
 }
 
 BOOL CreateOpLockBlockingW(LPCWSTR FilePath, DWORD AllowedOperation, PVOID Callback, BOOL IsDir)
@@ -77,6 +83,7 @@ BOOL CreateOpLockBlockingW(LPCWSTR FilePath, DWORD AllowedOperation, PVOID Callb
     REQUEST_OPLOCK_INPUT_BUFFER     buf = { 0 };
     REQUEST_OPLOCK_OUTPUT_BUFFER    outBuf = { 0 };
     DWORD                           flags = FILE_FLAG_OVERLAPPED;
+    BOOL                            ret = FALSE;
 
     buf.StructureLength = sizeof(REQUEST_OPLOCK_INPUT_BUFFER);
     buf.StructureVersion = REQUEST_OPLOCK_CURRENT_VERSION;
@@ -85,7 +92,7 @@ BOOL CreateOpLockBlockingW(LPCWSTR FilePath, DWORD AllowedOperation, PVOID Callb
 
     hEvent = CreateEventW(NULL, FALSE, FALSE, NULL);
     if (!hEvent)
-        return FALSE;
+        goto out;
 
     ol.hEvent = hEvent;
 
@@ -102,7 +109,7 @@ BOOL CreateOpLockBlockingW(LPCWSTR FilePath, DWORD AllowedOperation, PVOID Callb
         NULL
     );
     if (hFile == INVALID_HANDLE_VALUE)
-        return FALSE;
+        goto out;
 
     DeviceIoControl(
         hFile,
@@ -115,15 +122,20 @@ BOOL CreateOpLockBlockingW(LPCWSTR FilePath, DWORD AllowedOperation, PVOID Callb
         &ol
     );
     if (GetLastError() != ERROR_IO_PENDING)
-        return FALSE;
+        goto out;
 
     if (!GetOverlappedResult(hFile, &ol, &returned, TRUE))
-        return FALSE;
+        goto out;
 
     ((void (*)(void))Callback)();
 
-    CloseHandle(hEvent);
-    CloseHandle(hFile);
+    ret = TRUE;
 
-    return TRUE;
+out:
+    if (hEvent)
+        CloseHandle(hEvent);
+    if (hFile != INVALID_HANDLE_VALUE)
+        CloseHandle(hFile);
+
+    return ret;
 }
