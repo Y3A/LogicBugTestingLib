@@ -20,3 +20,11 @@ BOOL CreateOpLockBlockingW(LPCWSTR FilePath, DWORD AllowedOperation, PVOID Callb
 // OpLock write and delete operations(allow read) to rollback.cmds and invokes callback upon those operations
 // Error returns FALSE and sets last error, Success blocks
 ```
+```c
+BOOL CreateJunctionW(LPCWSTR VictimDirectory, LPCWSTR TargetDirectory, BOOL Delete);
+// Example: CreateJunctionW(L"C:\\Windows\\Temp\\Backups", L"\\??\\C:\\Windows\\Writable", FALSE);
+// Creates junction point from backups to writable
+// Note that TargetDirectory must be a full NT Path, starting with \??\
+// Set Delete to TRUE to remove junction point
+// Error returns FALSE and sets last error
+```
