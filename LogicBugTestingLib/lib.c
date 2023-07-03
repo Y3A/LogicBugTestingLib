@@ -3,6 +3,8 @@
 #include "defs.h"
 #include "lib.h"
 
+#include <stdio.h>
+
 static _NtCreateSymbolicLinkObject NtCreateSymbolicLinkObject;
 
 // Statics
@@ -136,6 +138,73 @@ out:
         CloseHandle(hEvent);
     if (hFile != INVALID_HANDLE_VALUE)
         CloseHandle(hFile);
+
+    return ret;
+}
+
+BOOL CreateJunctionW(LPCWSTR VictimDirectory, LPCWSTR TargetDirectory, BOOL Delete)
+{
+    HANDLE                  hFile = NULL;
+    REPARSE_DATA_BUFFER     *buf = NULL;
+    BOOL                    ret = FALSE;
+    DWORD                   dataLength = 0;
+    DWORD                   bytesRet;
+    DWORD                   allocLength = 0;
+
+    hFile = CreateFileW(
+        VictimDirectory,
+        GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        NULL,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+        NULL
+    );
+    if (hFile == INVALID_HANDLE_VALUE)
+        goto out;
+
+    if (Delete)
+        allocLength = sizeof(REPARSE_DATA_BUFFER);
+    else {
+        dataLength = (wcslen(TargetDirectory) + 1) * 2;
+        allocLength = REPARSE_DATA_BUFFER_HEADER_LENGTH + dataLength + REPARSE_DATA_BUFFER_UNION_HEADER_SIZE;
+    }
+
+    buf = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, allocLength);
+    if (!buf)
+        goto out;
+    
+    buf->ReparseTag = IO_REPARSE_TAG_MOUNT_POINT;
+    
+    if (!Delete) {
+        buf->ReparseDataLength = dataLength + REPARSE_DATA_BUFFER_UNION_HEADER_SIZE; 
+        buf->MountPointReparseBuffer.SubstituteNameOffset = 0;
+        buf->MountPointReparseBuffer.SubstituteNameLength = wcslen(TargetDirectory) * 2;
+        buf->MountPointReparseBuffer.PrintNameOffset = (wcslen(TargetDirectory) + 1) * 2;
+        RtlCopyMemory(&buf->MountPointReparseBuffer.PathBuffer, TargetDirectory, wcslen(TargetDirectory) * 2);
+    }
+
+    ret = DeviceIoControl(
+        hFile,
+        Delete ? FSCTL_DELETE_REPARSE_POINT : FSCTL_SET_REPARSE_POINT,
+        buf,
+        allocLength,
+        NULL,
+        0,
+        &bytesRet,
+        NULL
+    );
+    if (!ret)
+        goto out;
+
+    ret = TRUE;
+
+out:
+    if (hFile != INVALID_HANDLE_VALUE)
+        CloseHandle(hFile);
+
+    if (buf)
+        HeapFree(GetProcessHeap(), 0, buf);
 
     return ret;
 }
