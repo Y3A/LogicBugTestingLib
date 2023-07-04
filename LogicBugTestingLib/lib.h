@@ -13,6 +13,7 @@ HANDLE CreateFakeDeviceMapW(LPCWSTR DrivePath, LPCWSTR FakeDirectory);
 BOOL CreateOpLockBlockingW(LPCWSTR FilePath, DWORD AllowedOperation, PVOID Callback, BOOL IsDir);
 // Example: CreateOpLockBlockingW(L"C:\\Windows\\Temp\\rollback.cmd", FILE_SHARE_READ, DoAction, FALSE);
 // OpLock write and delete operations(allow read) to rollback.cmds and invokes callback upon those operations
+// Callback takes a single parameter which is the handle to the oplocked file
 // Error returns FALSE and sets last error, Success blocks
 
 BOOL CreateJunctionW(LPCWSTR VictimDirectory, LPCWSTR TargetDirectory, BOOL Delete);

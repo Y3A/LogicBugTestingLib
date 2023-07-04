@@ -129,7 +129,7 @@ BOOL CreateOpLockBlockingW(LPCWSTR FilePath, DWORD AllowedOperation, PVOID Callb
     if (!GetOverlappedResult(hFile, &ol, &returned, TRUE))
         goto out;
 
-    ((void (*)(void))Callback)();
+    ((void (*)(void))Callback)(hFile);
 
     ret = TRUE;
 
