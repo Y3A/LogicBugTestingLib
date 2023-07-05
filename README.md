@@ -29,3 +29,9 @@ BOOL CreateJunctionW(LPCWSTR VictimDirectory, LPCWSTR TargetDirectory, BOOL Dele
 // Set Delete to TRUE to remove junction point
 // Error returns FALSE and sets last error
 ```
+```c
+BOOL MoveFileByHandleW(HANDLE hFile, LPCWSTR NewFile);
+// Example: MoveFileByHandleW(hFile, L"C:\\Users\\User\\desktop\\cpy");
+// Renames a file/directory by its handle. Normally used with oplock callback;
+// Error returns FALSE and sets last error
+```
