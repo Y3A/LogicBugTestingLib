@@ -10,9 +10,9 @@ HANDLE CreateFakeDeviceMapW(LPCWSTR DrivePath, LPCWSTR FakeDirectory);
 // Overrides the per user dos device symlink of C drive to C:\Test\ directory
 // Error returns NULL handle and sets last error
 
-BOOL CreateOpLockBlockingW(LPCWSTR FilePath, DWORD AllowedOperation, PVOID Callback, BOOL IsDir);
-// Example: CreateOpLockBlockingW(L"C:\\Windows\\Temp\\rollback.cmd", FILE_SHARE_READ, DoAction, FALSE);
-// OpLock write and delete operations(allow read) to rollback.cmds and invokes callback upon those operations
+BOOL CreateOpLockBlockingW(LPCWSTR FilePath, PVOID Callback, BOOL IsDir);
+// Example: CreateOpLockBlockingW(L"C:\\Windows\\Temp\\rollback.cmd", DoAction, FALSE);
+// OpLock all operations to rollback.cmd and invokes callback upon any operation
 // Callback takes a single parameter which is the handle to the oplocked file
 // Error returns FALSE and sets last error, Success blocks
 
@@ -21,4 +21,9 @@ BOOL CreateJunctionW(LPCWSTR VictimDirectory, LPCWSTR TargetDirectory, BOOL Dele
 // Creates junction point from backups to writable
 // Note that TargetDirectory must be a full NT Path, starting with \??\
 // Set Delete to TRUE to remove junction point
+// Error returns FALSE and sets last error
+
+BOOL MoveFileByHandleW(HANDLE hFile, LPCWSTR NewFile);
+// Example: MoveFileByHandleW(hFile, L"C:\\Users\\User\\desktop\\cpy");
+// Renames a file/directory by its handle. Normally used with oplock callback;
 // Error returns FALSE and sets last error

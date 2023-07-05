@@ -77,7 +77,7 @@ out:
     return hSymLink;
 }
 
-BOOL CreateOpLockBlockingW(LPCWSTR FilePath, DWORD AllowedOperation, PVOID Callback, BOOL IsDir)
+BOOL CreateOpLockBlockingW(LPCWSTR FilePath, PVOID Callback, BOOL IsDir)
 {
     HANDLE                          hEvent = NULL, hFile = NULL;
     OVERLAPPED                      ol = { 0 };
@@ -103,8 +103,8 @@ BOOL CreateOpLockBlockingW(LPCWSTR FilePath, DWORD AllowedOperation, PVOID Callb
 
     hFile = CreateFileW(
         FilePath,
-        GENERIC_READ,
-        AllowedOperation,
+        GENERIC_ALL,
+        FILE_SHARE_ALL,
         NULL,
         OPEN_EXISTING,
         flags,
@@ -205,6 +205,30 @@ out:
 
     if (buf)
         HeapFree(GetProcessHeap(), 0, buf);
+
+    return ret;
+}
+
+BOOL MoveFileByHandleW(HANDLE hFile, LPCWSTR NewFile)
+{
+    FILE_RENAME_INFO* info = NULL;
+    DWORD            allocSize = sizeof(FILE_RENAME_INFO) + (wcslen(NewFile) + 1) * sizeof(WCHAR);
+    BOOL             ret = FALSE;
+
+    info = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, allocSize);
+    if (!info)
+        goto out;
+
+    info->ReplaceIfExists = TRUE;
+    info->RootDirectory = NULL;
+    info->FileNameLength = wcslen(NewFile) * sizeof(WCHAR);
+    RtlCopyMemory(&info->FileName, NewFile, wcslen(NewFile) * sizeof(WCHAR));
+
+    ret = SetFileInformationByHandle(hFile, FileRenameInfo, info, allocSize);
+
+out:
+    if (info)
+        HeapFree(GetProcessHeap(), 0, info);
 
     return ret;
 }
