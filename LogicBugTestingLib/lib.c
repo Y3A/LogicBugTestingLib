@@ -232,3 +232,27 @@ out:
 
     return ret;
 }
+
+BOOL IsRedirectionTrustPolicyEnforced(DWORD Pid, DWORD *Enforced)
+{
+    HANDLE                                          hProc = NULL;
+    PROCESS_MITIGATION_REDIRECTION_TRUST_POLICY     buf = { 0 };
+    BOOL                                            ret = FALSE;
+
+    hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, Pid);
+    if (!hProc)
+        goto out;
+
+    ret = GetProcessMitigationPolicy(hProc, ProcessRedirectionTrustPolicy, &buf, sizeof(buf));
+    if (!ret)
+        goto out;
+
+    *Enforced = buf.EnforceRedirectionTrust;
+    ret = TRUE;
+
+out:
+    if (hProc)
+        CloseHandle(hProc);
+
+    return ret;
+}

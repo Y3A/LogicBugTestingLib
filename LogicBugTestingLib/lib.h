@@ -27,3 +27,8 @@ BOOL MoveFileByHandleW(HANDLE hFile, LPCWSTR NewFile);
 // Example: MoveFileByHandleW(hFile, L"C:\\Users\\User\\desktop\\cpy");
 // Renames a file/directory by its handle. Normally used with oplock callback;
 // Error returns FALSE and sets last error
+
+BOOL IsRedirectionTrustPolicyEnforced(DWORD Pid, DWORD *Enforced);
+// Example: IsRedirectionTrustPolicyEnforced(1, &isEnforced);
+// Checks if the redirection trust policy(disability to follow filesystem junctions created by non-admin users) is enforced
+// Error returns FALSE and sets last error, Success returned TRUE and result via Enforced argument
