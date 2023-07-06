@@ -15,9 +15,9 @@ HANDLE CreateFakeDeviceMapW(LPCWSTR DrivePath, LPCWSTR FakeDirectory);
 // Error returns NULL handle and sets last error
 ```
 ```c
-BOOL CreateOpLockBlockingW(LPCWSTR FilePath, DWORD AllowedOperation, PVOID Callback, BOOL IsDir);
-// Example: CreateOpLockBlockingW(L"C:\\Windows\\Temp\\rollback.cmd", FILE_SHARE_READ, DoAction, FALSE);
-// OpLock write and delete operations(allow read) to rollback.cmds and invokes callback upon those operations
+BOOL CreateOpLockBlockingW(LPCWSTR FilePath, OPLOCKCB Callback, BOOL IsDir);
+// Example: CreateOpLockBlockingW(L"C:\\Windows\\Temp\\rollback.cmd", DoAction, FALSE);
+// OpLock all operations to rollback.cmd and invokes callback upon any operation
 // Callback takes a single parameter which is the handle to the oplocked file
 // Error returns FALSE and sets last error, Success blocks
 ```
@@ -34,4 +34,12 @@ BOOL IsRedirectionTrustPolicyEnforced(DWORD Pid, DWORD *Enforced);
 // Example: IsRedirectionTrustPolicyEnforced(1, &isEnforced);
 // Checks if the redirection trust policy(disability to follow filesystem junctions created by non-admin users) is enforced
 // Error returns FALSE and sets last error, Success returned TRUE and result via Enforced argument
+```
+```c
+BOOL ProbeFileRunCallbackBlockingW(LPCWSTR Directory, PROBEFILECMP Compare, PROBEFILECB Callback);
+// Example: ProbeFileRunCallbackBlockingW(L"C:\\Windows\\Temp\\InstallDir\\*", Compare, DoAction);
+// Note: the directory has to end with "\\*"
+// Infinite loop running Compare on all files in directory until it returns TRUE, then run Callback
+// Compare takes a pointer to a WIN32_FIND_DATAW structure, Callback takes the filename
+// Error returns FALSE and sets last error, Success blocks
 ```
