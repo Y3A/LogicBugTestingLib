@@ -77,7 +77,7 @@ out:
     return hSymLink;
 }
 
-BOOL CreateOpLockBlockingW(LPCWSTR FilePath, PVOID Callback, BOOL IsDir)
+BOOL CreateOpLockBlockingW(LPCWSTR FilePath, OPLOCKCB Callback, BOOL IsDir)
 {
     HANDLE                          hEvent = NULL, hFile = NULL;
     OVERLAPPED                      ol = { 0 };
@@ -129,7 +129,7 @@ BOOL CreateOpLockBlockingW(LPCWSTR FilePath, PVOID Callback, BOOL IsDir)
     if (!GetOverlappedResult(hFile, &ol, &returned, TRUE))
         goto out;
 
-    ((void (*)(void))Callback)(hFile);
+    Callback(hFile);
 
     ret = TRUE;
 
@@ -253,6 +253,38 @@ BOOL IsRedirectionTrustPolicyEnforced(DWORD Pid, DWORD *Enforced)
 out:
     if (hProc)
         CloseHandle(hProc);
+
+    return ret;
+}
+
+BOOL ProbeFileRunCallbackBlockingW(LPCWSTR Directory, PROBEFILECMP Compare, PROBEFILECB Callback)
+{
+    WIN32_FIND_DATAW    buf = { 0 };
+    HANDLE              hFind = INVALID_HANDLE_VALUE;
+    BOOL                ret = FALSE, stopLoop = FALSE;
+
+    while (!stopLoop) {
+        hFind = FindFirstFileW(Directory, &buf);
+        if (hFind == INVALID_HANDLE_VALUE)
+            goto out;
+
+        do {
+            if (Compare(&buf)) {
+                FindClose(hFind); // prevent holding any dir lock
+                hFind = INVALID_HANDLE_VALUE;
+                Callback(&buf.cFileName);
+                ret = TRUE;
+                goto out;
+            }
+        } while (FindNextFileW(hFind, &buf));
+
+        if (GetLastError() != ERROR_NO_MORE_FILES)
+            goto out;
+    }
+
+out:
+    if (hFind != INVALID_HANDLE_VALUE)
+        FindClose(hFind);
 
     return ret;
 }

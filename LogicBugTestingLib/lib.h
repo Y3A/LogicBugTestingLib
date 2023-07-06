@@ -1,5 +1,9 @@
 #pragma once
 
+typedef VOID(*OPLOCKCB)(HANDLE hFile);
+typedef BOOL(*PROBEFILECMP)(PWIN32_FIND_DATAW);
+typedef VOID(*PROBEFILECB)(LPCWSTR FileName);
+
 HANDLE CreateSymLinkW(LPCWSTR ToCreate, LPCWSTR CreateFrom);
 // Example: CreateSymLinkW(L"\\??\\RPC Control\\deleteme", L"C:\\Windows\\System32\\ntdll.dll");
 // Creates new symlink \RPC Control\deleteme pointing to ntdll
@@ -10,7 +14,7 @@ HANDLE CreateFakeDeviceMapW(LPCWSTR DrivePath, LPCWSTR FakeDirectory);
 // Overrides the per user dos device symlink of C drive to C:\Test\ directory
 // Error returns NULL handle and sets last error
 
-BOOL CreateOpLockBlockingW(LPCWSTR FilePath, PVOID Callback, BOOL IsDir);
+BOOL CreateOpLockBlockingW(LPCWSTR FilePath, OPLOCKCB Callback, BOOL IsDir);
 // Example: CreateOpLockBlockingW(L"C:\\Windows\\Temp\\rollback.cmd", DoAction, FALSE);
 // OpLock all operations to rollback.cmd and invokes callback upon any operation
 // Callback takes a single parameter which is the handle to the oplocked file
@@ -32,3 +36,10 @@ BOOL IsRedirectionTrustPolicyEnforced(DWORD Pid, DWORD *Enforced);
 // Example: IsRedirectionTrustPolicyEnforced(1, &isEnforced);
 // Checks if the redirection trust policy(disability to follow filesystem junctions created by non-admin users) is enforced
 // Error returns FALSE and sets last error, Success returned TRUE and result via Enforced argument
+
+BOOL ProbeFileRunCallbackBlockingW(LPCWSTR Directory, PROBEFILECMP Compare, PROBEFILECB Callback);
+// Example: ProbeFileRunCallbackBlockingW(L"C:\\Windows\\Temp\\InstallDir\\*", Compare, DoAction);
+// Note: the directory has to end with "\\*"
+// Infinite loop running Compare on all files in directory until it returns TRUE, then run Callback
+// Compare takes a pointer to a WIN32_FIND_DATAW structure, Callback takes the filename
+// Error returns FALSE and sets last error, Success blocks
