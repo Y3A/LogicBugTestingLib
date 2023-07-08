@@ -1,11 +1,12 @@
 #include <Windows.h>
+#include <TlHelp32.h>
 
 #include "defs.h"
 #include "lib.h"
 
-#include <stdio.h>
-
 static _NtCreateSymbolicLinkObject NtCreateSymbolicLinkObject;
+static _NtSetInformationProcess    NtSetInformationProcess;
+static _NtOpenDirectoryObject      NtOpenDirectoryObject;
 
 // Statics
 
@@ -136,7 +137,7 @@ BOOL CreateOpLockBlockingW(LPCWSTR FilePath, OPLOCKCB Callback, BOOL IsDir)
 out:
     if (hEvent)
         CloseHandle(hEvent);
-    if (hFile != INVALID_HANDLE_VALUE)
+    if (hFile && hFile != INVALID_HANDLE_VALUE)
         CloseHandle(hFile);
 
     return ret;
@@ -200,7 +201,7 @@ BOOL CreateJunctionW(LPCWSTR VictimDirectory, LPCWSTR TargetDirectory, BOOL Dele
     ret = TRUE;
 
 out:
-    if (hFile != INVALID_HANDLE_VALUE)
+    if (hFile && hFile != INVALID_HANDLE_VALUE)
         CloseHandle(hFile);
 
     if (buf)
@@ -283,8 +284,69 @@ BOOL ProbeFileRunCallbackBlockingW(LPCWSTR Directory, PROBEFILECMP Compare, PROB
     }
 
 out:
-    if (hFind != INVALID_HANDLE_VALUE)
+    if (hFind && hFind != INVALID_HANDLE_VALUE)
         FindClose(hFind);
+
+    return ret;
+}
+
+BOOL SetAllProcessToGlobalDeviceMap(VOID)
+{
+    HANDLE                  hSnapShot = NULL, hCurrentProc = NULL;
+    HANDLE                  hGlobalDir = NULL;
+    PROCESSENTRY32W         procEntry = { sizeof(PROCESSENTRY32W) };
+    OBJECT_ATTRIBUTES       oa = { 0 };
+    UNICODE_STRING          uGlobalObjectName = { 0 };
+    NTSTATUS                status = STATUS_SUCCESS;
+    BOOL                    ret = FALSE;
+
+    if (!NtSetInformationProcess)
+        NtSetInformationProcess = GetProcAddress(GetModuleHandleW(L"ntdll"), "NtSetInformationProcess");
+    if (!NtOpenDirectoryObject)
+        NtOpenDirectoryObject = GetProcAddress(GetModuleHandleW(L"ntdll"), "NtOpenDirectoryObject");
+
+    uGlobalObjectName.Buffer = GLOBAL_DIR;
+    uGlobalObjectName.Length = wcslen(GLOBAL_DIR) * sizeof(WCHAR);
+    uGlobalObjectName.MaximumLength = wcslen(GLOBAL_DIR);
+    InitializeObjectAttributes(&oa, &uGlobalObjectName, OBJ_CASE_INSENSITIVE, NULL, NULL);
+
+    status = NtOpenDirectoryObject(&hGlobalDir, DIRECTORY_TRAVERSE, &oa);
+    if (!NT_SUCCESS(status)) {
+        SetLastError(status);
+        goto out;
+    }
+
+    hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapShot == INVALID_HANDLE_VALUE)
+        goto out;
+
+    while (Process32NextW(hSnapShot, &procEntry)) {
+        hCurrentProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, procEntry.th32ProcessID);
+        if (!hCurrentProc)
+            continue;
+
+        status = NtSetInformationProcess(hCurrentProc, ProcessDeviceMap, &hGlobalDir, sizeof(HANDLE));
+        if (!NT_SUCCESS(status)) {
+            SetLastError(status);
+            goto out;
+        }
+
+        CloseHandle(hCurrentProc);
+        hCurrentProc = NULL;
+    }
+
+    if (GetLastError() == ERROR_NO_MORE_FILES) {
+        SetLastError(ERROR_SUCCESS);
+        ret = TRUE;
+    }
+
+out:
+    if (hCurrentProc)
+        CloseHandle(hCurrentProc);
+    if (hSnapShot && hSnapShot != INVALID_HANDLE_VALUE)
+        CloseHandle(hSnapShot);
+    if (hGlobalDir)
+        CloseHandle(hGlobalDir);
 
     return ret;
 }

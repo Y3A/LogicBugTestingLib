@@ -46,6 +46,8 @@ typedef struct _REPARSE_DATA_BUFFER {
 #define REPARSE_DATA_BUFFER_HEADER_LENGTH FIELD_OFFSET(REPARSE_DATA_BUFFER, GenericReparseBuffer.DataBuffer)
 
 typedef NTSTATUS(NTAPI *_NtCreateSymbolicLinkObject)(PHANDLE LinkHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PUNICODE_STRING TargetName);
+typedef NTSYSAPI NTSTATUS(*_NtSetInformationProcess)(HANDLE ProcessHandle, PROCESS_INFORMATION_CLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength);
+typedef NTSYSAPI NTSTATUS(*_NtOpenDirectoryObject)(PHANDLE DirectoryObjectHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes);
 
 #define InitializeObjectAttributes(p, n, a, r, s) { \
     (p)->Length = sizeof(OBJECT_ATTRIBUTES); \
@@ -55,6 +57,10 @@ typedef NTSTATUS(NTAPI *_NtCreateSymbolicLinkObject)(PHANDLE LinkHandle, ACCESS_
     (p)->SecurityDescriptor = s; \
     (p)->SecurityQualityOfService = NULL; \
 }
+
+#define GLOBAL_DIR  L"\\GLOBAL??"
+#define DIRECTORY_TRAVERSE 2
+#define ProcessDeviceMap 23
 
 #define STATUS_SUCCESS 0x0
 #define NT_SUCCESS(Status) ((NTSTATUS)(Status) >= 0)

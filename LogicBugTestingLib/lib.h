@@ -35,7 +35,7 @@ BOOL MoveFileByHandleW(HANDLE hFile, LPCWSTR NewFile);
 BOOL IsRedirectionTrustPolicyEnforced(DWORD Pid, DWORD *Enforced);
 // Example: IsRedirectionTrustPolicyEnforced(1, &isEnforced);
 // Checks if the redirection trust policy(disability to follow filesystem junctions created by non-admin users) is enforced
-// Error returns FALSE and sets last error, Success returned TRUE and result via Enforced argument
+// Error returns FALSE and sets last error, Success returned TRUE and result via the <Enforced> argument
 
 BOOL ProbeFileRunCallbackBlockingW(LPCWSTR Directory, PROBEFILECMP Compare, PROBEFILECB Callback);
 // Example: ProbeFileRunCallbackBlockingW(L"C:\\Windows\\Temp\\InstallDir\\*", Compare, DoAction);
@@ -43,3 +43,9 @@ BOOL ProbeFileRunCallbackBlockingW(LPCWSTR Directory, PROBEFILECMP Compare, PROB
 // Infinite loop running Compare on all files in directory until it returns TRUE, then run Callback
 // Compare takes a pointer to a WIN32_FIND_DATAW structure, Callback takes the filename
 // Error returns FALSE and sets last error, Success blocks
+
+BOOL SetAllProcessToGlobalDeviceMap(VOID);
+// Example: SetAllProcessToGlobalDeviceMap();
+// Sets all process the user has access to(therefore sees the user's device map) to use the \\GLOBAL?? directory as default process device map
+// In the case we want to override the per user device map, running processes like explorer.exe can still function normally
+// Error returns FALSE and sets last error
