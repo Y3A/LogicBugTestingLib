@@ -43,3 +43,10 @@ BOOL ProbeFileRunCallbackBlockingW(LPCWSTR Directory, PROBEFILECMP Compare, PROB
 // Compare takes a pointer to a WIN32_FIND_DATAW structure, Callback takes the filename
 // Error returns FALSE and sets last error, Success blocks
 ```
+```c
+BOOL SetAllProcessToGlobalDeviceMap(VOID);
+// Example: SetAllProcessToGlobalDeviceMap();
+// Sets all process the user has access to(therefore sees the user's device map) to use the \\GLOBAL?? directory as default process device map
+// In the case we want to override the per user device map, running processes like explorer.exe can still function normally
+// Error returns FALSE and sets last error
+```
