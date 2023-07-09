@@ -281,6 +281,9 @@ BOOL ProbeFileRunCallbackBlockingW(LPCWSTR Directory, PROBEFILECMP Compare, PROB
 
         if (GetLastError() != ERROR_NO_MORE_FILES)
             goto out;
+
+        FindClose(hFind);
+        hFind = INVALID_HANDLE_VALUE;
     }
 
 out:
