@@ -5,7 +5,7 @@ typedef BOOL(*PROBEFILECMP)(PWIN32_FIND_DATAW);
 typedef VOID(*PROBEFILECB)(LPCWSTR FileName);
 
 HANDLE CreateSymLinkW(LPCWSTR ToCreate, LPCWSTR CreateFrom);
-// Example: CreateSymLinkW(L"\\??\\RPC Control\\deleteme", L"C:\\Windows\\System32\\ntdll.dll");
+// Example: CreateSymLinkW(L"\\RPC Control\\deleteme", L"C:\\Windows\\System32\\ntdll.dll");
 // Creates new symlink \RPC Control\deleteme pointing to ntdll
 // Error returns NULL handle and sets last error
 
