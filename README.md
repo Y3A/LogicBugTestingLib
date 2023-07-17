@@ -25,7 +25,7 @@ BOOL CreateOpLockBlockingW(LPCWSTR FilePath, OPLOCKCB Callback, BOOL IsDir);
 BOOL CreateJunctionW(LPCWSTR VictimDirectory, LPCWSTR TargetDirectory, BOOL Delete);
 // Example: CreateJunctionW(L"C:\\Windows\\Temp\\Backups", L"\\??\\C:\\Windows\\Writable", FALSE);
 // Creates junction point from backups to writable
-// Note that TargetDirectory must be a full NT Path, starting with \??\
+// Note that TargetDirectory must be a full NT Path, means starting with \??\ if accessing filesystem volumes
 // Set Delete to TRUE to remove junction point
 // Error returns FALSE and sets last error
 ```
